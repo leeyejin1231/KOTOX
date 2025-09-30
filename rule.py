@@ -176,15 +176,29 @@ class TransliterationalObfuscation:
         
         return response.choices[0].message.content
 
-    def iconic_swap(self, text: str) -> str:
+    def chinese_iconic_swap(self, text: str) -> str:
         """
         3-A. 음차
         """
-        text_list = list(text)
-        for i in range(len(text_list)):
-            if text_list[i] in self.transliterational_dict["chinese_iconic_dict"].keys():
-                text_list[i] = random.choice(self.transliterational_dict["chinese_iconic_dict"][text_list[i]])
-        return "".join(text_list)
+        # text_list = list(text)
+        # for i in range(len(text_list)):
+        #     if text_list[i] in self.transliterational_dict["chinese_iconic_dict"].keys():
+        #         text_list[i] = random.choice(self.transliterational_dict["chinese_iconic_dict"][text_list[i]])
+        # return "".join(text_list)
+
+        with open("rules/한자_음차_prompt.txt", "r") as file:
+            prompt = file.read()
+        
+        messages = [
+            {"role": "system", "content": prompt}, 
+            {"role": "user", "content": "\n\n[문장]\n" + text}
+            ]
+        response = self.client.chat.completions.create(
+            model="gpt-5",
+            messages=messages,
+        )
+        
+        return response.choices[0].message.content
 
     def number_swap(self, text: str) -> str:
         """
@@ -200,11 +214,25 @@ class TransliterationalObfuscation:
         """
         3-B. 표기 대치
         """ 
-        text_list = list(text)
-        for i in range(len(text_list)):
-            if text_list[i] in self.transliterational_dict["meaning_dict"].keys():
-                text_list[i] = random.choice(self.transliterational_dict["meaning_dict"][text_list[i]])
-        return "".join(text_list)
+        # text_list = list(text)
+        # for i in range(len(text_list)):
+        #     if text_list[i] in self.transliterational_dict["meaning_dict"].keys():
+        #         text_list[i] = random.choice(self.transliterational_dict["meaning_dict"][text_list[i]])
+        # return "".join(text_list)
+
+        with open("rules/표기대치_prompt.txt", "r") as file:
+            prompt = file.read()
+        
+        messages = [
+            {"role": "system", "content": prompt}, 
+            {"role": "user", "content": "\n\n[문장]\n" + text}
+            ]
+        response = self.client.chat.completions.create(
+            model="gpt-5",
+            messages=messages,
+        )
+        
+        return response.choices[0].message.content
 
 
 # 6. 화용접 접근
@@ -406,9 +434,7 @@ class SymbolAddition:
 # 6. 화용적 접근
 class PragmaticObfuscation:
     def __init__(self):
-        with open("rules/pragmatic_dictionary.json", "r") as f:
-            self.pragmatic_dict = json.load(f)
-            self.client = openai.OpenAI(api_key=API_KEY)
+        self.client = openai.OpenAI(api_key=API_KEY)
             
     def pragmatic_swap(self, text: str) -> str:
         """
@@ -428,8 +454,7 @@ class PragmaticObfuscation:
             messages=messages,
         )
         
-        #return response.output[1].content[0].text  # gpt-5
-        return response.output[0].content[0].text  #gpt-4.1
+        return response.choices[0].message.content
 
 
 # 테스트 함수
@@ -441,7 +466,10 @@ def test_symbol_addition():
     obfuscator = Obfuscation()
     iconic_obfuscator = IconicObfuscation()
     transliterational_obfuscator = TransliterationalObfuscation()
+    pragmatic_obfuscator = PragmaticObfuscation()
 
+    # test_text = "방이 너무 더러워요"
+    # test_text = "아니 방이 너무 좁고 더러워요 진짜 짜증나게"
     test_text = "사랑해요 나를 사랑해줘"
 
     # print("\n=== 종합 기호 추가 ===")
@@ -461,11 +489,13 @@ def test_symbol_addition():
 
     print("\n=== 표기법적 접근 ===")
     print("음차 결과:", transliterational_obfuscator.iconic_swap(test_text))
+    print("한자음차 결과:", transliterational_obfuscator.chinese_iconic_swap(test_text))
     print("외국어 음차 결과:", transliterational_obfuscator.foreign_iconic_swap(test_text))
-    print("표기 대치 결과:", transliterational_obfuscator.number_swap(test_text))
+    print("숫자표기 대치 결과:", transliterational_obfuscator.number_swap(test_text))
     print("표기 대치 결과:", transliterational_obfuscator.meaning_dict(test_text))
 
-
+    print("\n=== 화용적 접근 ===")
+    print("화용적 접근 결과:", pragmatic_obfuscator.pragmatic_swap(test_text))
 
 if __name__ == "__main__":
     test_symbol_addition()
