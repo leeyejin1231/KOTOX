@@ -1,0 +1,6 @@
+six
+hgtk
+beautifulsoup4
+requests
+openai
+python-dotenv
