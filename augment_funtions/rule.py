@@ -526,7 +526,7 @@ def test_symbol_addition():
     # print("\n=== 도상적 대치 ===")
     # print("야민 결과:", iconic_obfuscator.yamin_swap(test_text))
     # print("가나 결과:", iconic_obfuscator.gana_swap(test_text))
-    print("자음, 모음 결과:", iconic_obfuscator.consonant_swap("개새끼"))
+    print("자음, 모음 결과:", iconic_obfuscator.consonant_swap("조까라시바라마개새끼야"))
     # print("90도 회전 결과:", iconic_obfuscator.rotation_90_swap(test_text))
     # print("180도 회전 결과:", iconic_obfuscator.rotation_180_swap(test_text))
     # print("압축 결과:", iconic_obfuscator.compression_swap(test_text))
