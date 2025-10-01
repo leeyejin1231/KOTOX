@@ -1,6 +1,7 @@
-six
-hgtk
-beautifulsoup4
-requests
-openai
-python-dotenv
+six==1.17.0
+hgtk==0.2.1
+beautifulsoup4==4.14.2
+requests==2.23.5
+openai==1.109.1
+python-dotenv==1.1.1
+pandas==2.3.3
