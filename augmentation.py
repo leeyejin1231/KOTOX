@@ -463,7 +463,6 @@ class Augmentation:
 def main():
     augmentation = Augmentation()
     df = pd.read_csv("data/kda_ko.csv")
-    augmented_data = pd.DataFrame()
     neutral_texts = []
     toxic_texts = []
     obfucated_texts = []
@@ -473,7 +472,8 @@ def main():
     temp_neutral_text = df['neutral'][0]
     temp_implicit = []
 
-    for i in tqdm(range(len(df))):
+    # for i in tqdm(range(len(df))):
+    for i in tqdm(range(50,3000)):
         if df.iloc[i]['neutral'] == temp_neutral_text:
             temp_implicit.append(df.iloc[i]['implicit'])
         else:
@@ -503,6 +503,7 @@ def main():
             temp_implicit = [df.iloc[i]['implicit']]
         
         if i%50 == 0:
+            augmented_data = pd.DataFrame()
             augmented_data['neutral'] = neutral_texts
             augmented_data['toxic'] = toxic_texts
             augmented_data['obfuscated_text'] = obfucated_texts
@@ -525,7 +526,8 @@ def main():
                 toxic_labels.append(1)
             obfucated_texts.append(r['steps'][-1]['after'])
             obfucasted_labels.append(", ".join([s['techniques'][0] for s in r['steps']]))
-    
+
+    augmented_data = pd.DataFrame()        
     augmented_data['neutral'] = neutral_texts
     augmented_data['toxic'] = toxic_texts
     augmented_data['obfuscated_text'] = obfucated_texts
