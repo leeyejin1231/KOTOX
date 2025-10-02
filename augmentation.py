@@ -1,3 +1,5 @@
+from operator import index
+from tkinter.constants import FALSE
 from augment_funtions import Processing, SyntaticObfuscation, IconicObfuscation, TransliterationalObfuscation, SymbolAddition, PragmaticObfuscation, SociolinguisticObfuscation, PhoneticAddition
 import pandas as pd
 from tqdm import tqdm
@@ -469,11 +471,11 @@ def main():
     toxic_labels = []
     obfucasted_labels = []
 
-    temp_neutral_text = df['neutral'][0]
+    temp_neutral_text = df['neutral'][3000]
     temp_implicit = []
 
     # for i in tqdm(range(len(df))):
-    for i in tqdm(range(50,3000)):
+    for i in tqdm(range(3000,4000)):
         if df.iloc[i]['neutral'] == temp_neutral_text:
             temp_implicit.append(df.iloc[i]['implicit'])
         else:
@@ -502,7 +504,7 @@ def main():
             temp_neutral_text = df.iloc[i]['neutral']
             temp_implicit = [df.iloc[i]['implicit']]
         
-        if i%50 == 0:
+        if i> 3020 and i%50 == 0:
             augmented_data = pd.DataFrame()
             augmented_data['neutral'] = neutral_texts
             augmented_data['toxic'] = toxic_texts
@@ -510,22 +512,22 @@ def main():
             augmented_data['toxic_label'] = toxic_labels
             augmented_data['obfuscation_label'] = obfucasted_labels
             
-            augmented_data.to_csv("./data/augmented_data.csv")
-            print(f"save {i}th data to './data/augmented_data.csv'")
+            augmented_data.to_csv("./data/augmented_data_4000.csv", index=False)
+            print(f"save {i}th data to './data/augmented_data_4000.csv'")
 
-        result = augmentation.augment_items([temp_neutral_text]+temp_implicit)
-        flag = True
-        for r in result:
-            neutral_texts.append(result[0]['original'])
-            if flag:
-                toxic_texts.append("")
-                toxic_labels.append(0)
-                flag = False
-            else:
-                toxic_texts.append(r['original'])
-                toxic_labels.append(1)
-            obfucated_texts.append(r['steps'][-1]['after'])
-            obfucasted_labels.append(", ".join([s['techniques'][0] for s in r['steps']]))
+    result = augmentation.augment_items([temp_neutral_text]+temp_implicit)
+    flag = True
+    for r in result:
+        neutral_texts.append(result[0]['original'])
+        if flag:
+            toxic_texts.append("")
+            toxic_labels.append(0)
+            flag = False
+        else:
+            toxic_texts.append(r['original'])
+            toxic_labels.append(1)
+        obfucated_texts.append(r['steps'][-1]['after'])
+        obfucasted_labels.append(", ".join([s['techniques'][0] for s in r['steps']]))
 
     augmented_data = pd.DataFrame()        
     augmented_data['neutral'] = neutral_texts
@@ -534,8 +536,8 @@ def main():
     augmented_data['toxic_label'] = toxic_labels
     augmented_data['obfuscation_label'] = obfucasted_labels
     
-    augmented_data.to_csv("./data/augmented_data.csv")
-    print("save to './data/augmented_data.csv'\nDone!!")
+    augmented_data.to_csv("./data/augmented_data_4000.csv", index=FALSE)
+    print("save to './data/augmented_data_4000.csv'\nDone!!")
 
 
 if __name__ == "__main__":
