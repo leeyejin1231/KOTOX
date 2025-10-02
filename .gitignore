@@ -28,7 +28,6 @@ MANIFEST
 
 data/*
 *.ipynb
-processing.py
 *.xlsx
 .DS_Store
 labeled_data/*
