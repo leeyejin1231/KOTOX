@@ -26,7 +26,10 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-data/*
+data/KOTOX_classification/no_obfus/*
+data/KOTOX_classification/no+obfus/*
+data/ko_obf_length.csv
+data/ko_obfs_augmented_*.csv
 *.ipynb
 *.xlsx
 .DS_Store

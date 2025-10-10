@@ -1,5 +1,5 @@
 # Evaluation Configuration
-dataset = ["KObfus/no_obfus", "KObfus/easy", "KObfus/medium", "KObfus/hard", "KObfus/total"] 
+dataset = ["KObfus/no_obfus", "KObfus/easy", "KObfus/normal", "KObfus/hard", "KObfus/total"] 
 
 tuning_param  = ["dataset"] ## list of possible paramters to be tuned
 
