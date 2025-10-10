@@ -1,7 +1,14 @@
 six==1.17.0
 hgtk==0.2.1
 beautifulsoup4==4.14.2
-requests==2.23.5
+requests
 openai==1.109.1
 python-dotenv==1.1.1
 pandas==2.3.3
+torch==2.8.0
+transformers==4.56.2
+scikit-learn==1.6.1
+easydict==1.13
+jamo==0.4.1
+konlpy==0.6.0
+-c conda-forge openjdk=21

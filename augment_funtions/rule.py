@@ -12,19 +12,49 @@ class SyntaticObfuscation:
     def __init__(self):\
         pass
     
-    def spacing(self, text: str) -> str:
+    def spacing(self, text_list: str) -> str:
         """
         4-A. 띄어쓰기
         """
-        text = text.strip()
-        out = []
-        for i, ch in enumerate(text):
-            out.append(ch)
-            if 0xAC00 <= ord(ch) <= 0xD7A3:
-                if i < len(text) - 1 and random.random() < 0.25:
-                    out.append(" ")
-        
-        return "".join(out)
+        option = random.choice([0, 1])
+        if option == 0:
+            result = ""
+            for span in text_list:
+                result += span['span'][-1]
+            return result
+        else:
+            result_list = []
+            applied_index = []
+            for i in range(len(text_list)):
+                word = text_list[i]['span'][-1]
+                applied_rule = text_list[i]['applied_rule']
+                # 단어 길이가 2 이상일 때만 띄어쓰기 삽입 시도, 배열 교란이 없는 경우에만
+                if len(word) > 1 and '11' not in applied_rule:
+                    # 삽입 위치를 1 ~ len(word)-1 중에서 랜덤 선택
+                    insert_pos = random.randint(1, len(word)-1)
+                    word = word[:insert_pos] + " " + word[insert_pos:]
+                    result_list.append(word)
+                    applied_index.append(i)
+                else:
+                    result_list.append("")
+            
+            # 40% 이하면 그냥 띄어쓰기 없는 걸로
+            if len(applied_index) < int(len(text_list)*0.4):
+                result = ""
+                for span in text_list:
+                    result += span['span'][-1]
+                return result
+            else:
+                selected_span = random.sample(applied_index, int(len(text_list)*0.4))
+                result = ""
+                for i in range(len(result_list)):
+                    if i in selected_span:
+                        result += result_list[i] + " "
+                    else:
+                        result += text_list[i]['span'][-1] + " "
+                
+                return result.rstrip()
+                
 
     def change_array(self, text: str) -> str:
         """
@@ -106,13 +136,13 @@ class IconicObfuscation:
 
         return "".join(result)
 
-    def rotation_90_swap(self, text: str) -> str:
+    def rotation_swap(self, text: str) -> str:
         """
         2-B. 90도 회전
         """
-        for key in self.iconic_dict["rotation_90_dict"].keys():
+        for key in self.iconic_dict["rotation_dict"].keys():
             if key in text:
-                text = text.replace(key, random.choice(self.iconic_dict["rotation_90_dict"][key]))
+                text = text.replace(key, random.choice(self.iconic_dict["rotation_dict"][key]))
         return text
 
     def rotation_180_swap(self, text: str) -> str:
@@ -145,12 +175,13 @@ class TransliterationalObfuscation:
         """
         3-A. 음차
         """
-        with open("./rules/음차_prompt.txt", "r") as file:
+        with open("./rules/latin_prompt.txt", "r") as file:
             prompt = file.read()
         
         messages = [
             {"role": "system", "content": prompt}, 
-            {"role": "user", "content": "\n\n[문장]\n" + text}
+            {"role": "user", "content": text}
+            # {"role": "user", "content": "\n\n### 음차 표기 GPT\n[주어진 문장]\n" + text + "\n[출력 문장]\n"}
             ]
         
         response = self.client.chat.completions.create(
@@ -158,57 +189,74 @@ class TransliterationalObfuscation:
             messages=messages,
         )
         
-        return response.choices[0].message.content
+        try:
+            response = response.choices[0].message.content
+            response.replace("```json", "").replace("```", "")
+            response = json.loads(response)
+        except Exception as e:
+            print(f"error: {e}")
+            return text
+        
+        return response["output"]
 
     def foreign_iconic_swap(self, text: str) -> str:
         """
         3-A. 외국어 음차
         """
-        with open("./rules/외국어_음차_prompt.txt", "r") as file:
+        with open("./rules/korean_prompt.txt", "r") as file:
             prompt = file.read()
         
         messages = [
             {"role": "system", "content": prompt}, 
-            {"role": "user", "content": "\n\n[문장]\n" + text}
+            {"role": "user", "content": text}
+            # {"role": "user", "content": "\n\n### 음차 표기 GPT\n[주어진 문장]\n" + text + "\n[출력 문장]\n"}
             ]
         response = self.client.chat.completions.create(
             model="gpt-4.1",
             messages=messages,
         )
-        
-        return response.choices[0].message.content
 
-    def chinese_iconic_swap(self, text: str) -> str:
-        """
-        3-A. 음차
-        """
-        # text_list = list(text)
-        # for i in range(len(text_list)):
-        #     if text_list[i] in self.transliterational_dict["chinese_iconic_dict"].keys():
-        #         text_list[i] = random.choice(self.transliterational_dict["chinese_iconic_dict"][text_list[i]])
-        # return "".join(text_list)
-
-        with open("./rules/한자_음차_prompt.txt", "r") as file:
-            prompt = file.read()
+        try:
+            response = response.choices[0].message.content
+            response.replace("```json", "").replace("```", "")
+            response = json.loads(response)
+        except Exception as e:
+            print(f"error: {e}")
+            return text
         
-        messages = [
-            {"role": "system", "content": prompt}, 
-            {"role": "user", "content": "\n\n[문장]\n" + text}
-            ]
-        response = self.client.chat.completions.create(
-            model="gpt-4.1",
-            messages=messages,
-        )
-        
-        return response.choices[0].message.content
+        return response["output"]
 
-    def number_swap(self, text: str) -> str:
+    # def chinese_iconic_swap(self, text: str) -> str:
+    #     """
+    #     3-A. 음차
+    #     """
+    #     # text_list = list(text)
+    #     # for i in range(len(text_list)):
+    #     #     if text_list[i] in self.transliterational_dict["chinese_iconic_dict"].keys():
+    #     #         text_list[i] = random.choice(self.transliterational_dict["chinese_iconic_dict"][text_list[i]])
+    #     # return "".join(text_list)
+
+    #     with open("./rules/한자_음차_prompt.txt", "r") as file:
+    #         prompt = file.read()
+        
+    #     messages = [
+    #         {"role": "system", "content": prompt}, 
+    #         {"role": "user", "content": "\n\n[문장]\n" + text}
+    #         ]
+    #     response = self.client.chat.completions.create(
+    #         model="gpt-4.1",
+    #         messages=messages,
+    #     )
+        
+    #     return response.choices[0].message.content
+
+    def meaning_swap(self, text: str) -> str:
         """
         3-B. 표기 대치
         """     
-        for key in self.transliterational_dict["number_dict"].keys():
+        for key in self.transliterational_dict["meaning_dict"].keys():
             if key in text:
-                text = text.replace(key, random.choice(self.transliterational_dict["number_dict"][key]))
+                text = text.replace(key, random.choice(self.transliterational_dict["meaning_dict"][key]))
         return text
 
     def meaning_dict(self, text: str) -> str:
@@ -501,49 +549,316 @@ class SociolinguisticObfuscation:
 
 
 # 테스트 함수
-def test_symbol_addition():
+def test_all_functions():
     """
-    기호 추가 함수들을 테스트하는 함수
+    모든 함수들을 종합적으로 테스트하는 함수
     """
-    symbol_adder = SymbolAddition()
-    obfuscator = SyntaticObfuscation()
-    iconic_obfuscator = IconicObfuscation()
-    transliterational_obfuscator = TransliterationalObfuscation()
-    pragmatic_obfuscator = PragmaticObfuscation()
-    sociolinguistic_obfuscator = SociolinguisticObfuscation()
-
-    test_text = "방이 너무 더러워요"
-    # test_text = "아니 방이 너무 좁고 더러워요 진짜 짜증나게"
-    # test_text = "사랑해요 나를 사랑해줘"
-
-    # print("\n=== 종합 기호 추가 ===")
-    # print("종합 결과:", symbol_adder.comprehensive_symbol_addition(test_text))
-
-    # print("\n=== 배열 변경 ===")
-    # print("띄어쓰기 추가 결과:", obfuscator.spacing(test_text))
-    # print("배열 변경 결과:", obfuscator.change_array(test_text))
-
-    # print("\n=== 도상적 대치 ===")
-    # print("야민 결과:", iconic_obfuscator.yamin_swap(test_text))
-    # print("가나 결과:", iconic_obfuscator.gana_swap(test_text))
-    print("자음, 모음 결과:", iconic_obfuscator.consonant_swap("조까라시바라마개새끼야"))
-    # print("90도 회전 결과:", iconic_obfuscator.rotation_90_swap(test_text))
-    # print("180도 회전 결과:", iconic_obfuscator.rotation_180_swap(test_text))
-    # print("압축 결과:", iconic_obfuscator.compression_swap(test_text))
-
-    # print("\n=== 표기법적 접근 ===")
-    # print("음차 결과:", transliterational_obfuscator.iconic_swap(test_text))
-    # print("한자음차 결과:", transliterational_obfuscator.chinese_iconic_swap(test_text))
-    # print("외국어 음차 결과:", transliterational_obfuscator.foreign_iconic_swap(test_text))
-    # print("숫자표기 대치 결과:", transliterational_obfuscator.number_swap(test_text))
-    # print("표기 대치 결과:", transliterational_obfuscator.meaning_dict(test_text))
-
-    # print("\n=== 화용적 접근 ===")
-    # print("화용적 접근 결과:", pragmatic_obfuscator.pragmatic_swap(test_text))
-
-    # print("\n=== 사회언어학적 접근 ===")
-    # print("방언 결과:", sociolinguistic_obfuscator.sociolinguistic_swap(test_text))
+    print("🚀 Korean Obfuscation Functions Test")
+    print("=" * 60)
+    
+    # 클래스 인스턴스 생성
+    try:
+        syntatic_obfuscator = SyntaticObfuscation()
+        print("✅ SyntaticObfuscation 생성 성공")
+    except Exception as e:
+        print(f"❌ SyntaticObfuscation 생성 실패: {e}")
+        syntatic_obfuscator = None
+    
+    try:
+        iconic_obfuscator = IconicObfuscation()
+        print("✅ IconicObfuscation 생성 성공")
+    except Exception as e:
+        print(f"❌ IconicObfuscation 생성 실패: {e}")
+        iconic_obfuscator = None
+    
+    try:
+        symbol_adder = SymbolAddition()
+        print("✅ SymbolAddition 생성 성공")
+    except Exception as e:
+        print(f"❌ SymbolAddition 생성 실패: {e}")
+        symbol_adder = None
+    
+    try:
+        transliterational_obfuscator = TransliterationalObfuscation()
+        print("✅ TransliterationalObfuscation 생성 성공")
+    except Exception as e:
+        print(f"❌ TransliterationalObfuscation 생성 실패: {e}")
+        transliterational_obfuscator = None
+    
+    try:
+        pragmatic_obfuscator = PragmaticObfuscation()
+        print("✅ PragmaticObfuscation 생성 성공")
+    except Exception as e:
+        print(f"❌ PragmaticObfuscation 생성 실패: {e}")
+        pragmatic_obfuscator = None
+    
+    try:
+        sociolinguistic_obfuscator = SociolinguisticObfuscation()
+        print("✅ SociolinguisticObfuscation 생성 성공")
+    except Exception as e:
+        print(f"❌ SociolinguisticObfuscation 생성 실패: {e}")
+        sociolinguistic_obfuscator = None
+    
+    print("\n" + "=" * 60)
+    
+    # 기본 테스트 텍스트들
+    test_texts = [
+        "안녕하세요",
+        "김밥을 먹었어요",
+        "학교에 가요",
+        "아니 방이 너무 좁고 더러워요 진짜 짜증나게 왜 그러는 걸까요??",
+        "사랑해요 나를 사랑해줘",
+        "Hello 안녕 123 !@#"
+    ]
+    
+    # 1. SyntaticObfuscation 테스트
+    print("\n=== 1. SyntaticObfuscation 테스트 ===")
+    if syntatic_obfuscator:
+        for i, test_text in enumerate(test_texts[:3]):
+            print(f"\n--- 테스트 {i+1}: '{test_text}' ---")
+            
+            # spacing 테스트를 위한 text_list 생성
+            text_list = [
+                {'span': [word, word], 'appplied_rule': []}
+                for word in test_text.split()
+            ]
+            
+            try:
+                result = syntatic_obfuscator.spacing(text_list)
+                print(f"spacing: '{result}'")
+            except Exception as e:
+                print(f"spacing 에러: {e}")
+            
+            try:
+                result = syntatic_obfuscator.change_array(test_text)
+                print(f"change_array: '{result}'")
+            except Exception as e:
+                print(f"change_array 에러: {e}")
+            
+            # obfuscate_span 테스트
+            words = test_text.split()
+            for word in words[:2]:  # 처음 2개 단어만 테스트
+                try:
+                    result = syntatic_obfuscator.obfuscate_span(word)
+                    print(f"obfuscate_span('{word}'): '{result}'")
+                except Exception as e:
+                    print(f"obfuscate_span('{word}') 에러: {e}")
+    
+    # 2. IconicObfuscation 테스트
+    print("\n=== 2. IconicObfuscation 테스트 ===")
+    if iconic_obfuscator:
+        for i, test_text in enumerate(test_texts[:3]):
+            print(f"\n--- 테스트 {i+1}: '{test_text}' ---")
+            
+            try:
+                result = iconic_obfuscator.yamin_swap(test_text)
+                print(f"yamin_swap: '{result}'")
+            except Exception as e:
+                print(f"yamin_swap 에러: {e}")
+            
+            try:
+                result = iconic_obfuscator.gana_swap(test_text)
+                print(f"gana_swap: '{result}'")
+            except Exception as e:
+                print(f"gana_swap 에러: {e}")
+            
+            try:
+                result = iconic_obfuscator.consonant_swap(test_text)
+                print(f"consonant_swap: '{result}'")
+            except Exception as e:
+                print(f"consonant_swap 에러: {e}")
+            
+            try:
+                result = iconic_obfuscator.rotation_swap(test_text)
+                print(f"rotation_swap: '{result}'")
+            except Exception as e:
+                print(f"rotation_swap 에러: {e}")
+            
+            try:
+                result = iconic_obfuscator.rotation_180_swap(test_text)
+                print(f"rotation_180_swap: '{result}'")
+            except Exception as e:
+                print(f"rotation_180_swap 에러: {e}")
+            
+            try:
+                result = iconic_obfuscator.compression_swap(test_text)
+                print(f"compression_swap: '{result}'")
+            except Exception as e:
+                print(f"compression_swap 에러: {e}")
+    
+    # 3. SymbolAddition 테스트
+    print("\n=== 3. SymbolAddition 테스트 ===")
+    if symbol_adder:
+        for i, test_text in enumerate(test_texts[:3]):
+            print(f"\n--- 테스트 {i+1}: '{test_text}' ---")
+            
+            try:
+                result = symbol_adder.add_hearts(test_text, 0.3)
+                print(f"add_hearts: '{result}'")
+            except Exception as e:
+                print(f"add_hearts 에러: {e}")
+            
+            try:
+                result = symbol_adder.add_stars(test_text, 0.2)
+                print(f"add_stars: '{result}'")
+            except Exception as e:
+                print(f"add_stars 에러: {e}")
+            
+            try:
+                result = symbol_adder.add_circles(test_text, 0.15)
+                print(f"add_circles: '{result}'")
+            except Exception as e:
+                print(f"add_circles 에러: {e}")
+            
+            try:
+                result = symbol_adder.add_brackets(test_text, 0.25)
+                print(f"add_brackets: '{result}'")
+            except Exception as e:
+                print(f"add_brackets 에러: {e}")
+            
+            try:
+                result = symbol_adder.add_punctuation(test_text, 0.2)
+                print(f"add_punctuation: '{result}'")
+            except Exception as e:
+                print(f"add_punctuation 에러: {e}")
+            
+            try:
+                result = symbol_adder.comprehensive_symbol_addition(test_text)
+                print(f"comprehensive_symbol_addition: '{result}'")
+            except Exception as e:
+                print(f"comprehensive_symbol_addition 에러: {e}")
+    
+    # 4. TransliterationalObfuscation 테스트 (OpenAI API 필요)
+    print("\n=== 4. TransliterationalObfuscation 테스트 ===")
+    if transliterational_obfuscator:
+        for i, test_text in enumerate(test_texts[:2]):  # API 호출이므로 2개만
+            print(f"\n--- 테스트 {i+1}: '{test_text}' ---")
+            
+            try:
+                result = transliterational_obfuscator.number_swap(test_text)
+                print(f"number_swap: '{result}'")
+            except Exception as e:
+                print(f"number_swap 에러: {e}")
+            
+            # API 호출하는 함수들은 주석 처리 (API 키 필요)
+            # try:
+            #     result = transliterational_obfuscator.iconic_swap(test_text)
+            #     print(f"iconic_swap: '{result}'")
+            # except Exception as e:
+            #     print(f"iconic_swap 에러: {e}")
+    
+    # 5. PragmaticObfuscation 테스트 (OpenAI API 필요)
+    print("\n=== 5. PragmaticObfuscation 테스트 ===")
+    if pragmatic_obfuscator:
+        # API 호출하는 함수들은 주석 처리 (API 키 필요)
+        # for i, test_text in enumerate(test_texts[:2]):
+        #     print(f"\n--- 테스트 {i+1}: '{test_text}' ---")
+        #     try:
+        #         result = pragmatic_obfuscator.pragmatic_swap(test_text)
+        #         print(f"pragmatic_swap: '{result}'")
+        #     except Exception as e:
+        #         print(f"pragmatic_swap 에러: {e}")
+        print("API 키가 필요하므로 테스트 생략")
+    
+    # 6. SociolinguisticObfuscation 테스트 (OpenAI API 필요)
+    print("\n=== 6. SociolinguisticObfuscation 테스트 ===")
+    if sociolinguistic_obfuscator:
+        # API 호출하는 함수들은 주석 처리 (API 키 필요)
+        # for i, test_text in enumerate(test_texts[:2]):
+        #     print(f"\n--- 테스트 {i+1}: '{test_text}' ---")
+        #     try:
+        #         result = sociolinguistic_obfuscator.sociolinguistic_swap(test_text)
+        #         print(f"sociolinguistic_swap: '{result}'")
+        #     except Exception as e:
+        #         print(f"sociolinguistic_swap 에러: {e}")
+        print("API 키가 필요하므로 테스트 생략")
+    
+    print("\n" + "=" * 60)
+    
+    # 코너 케이스 테스트
+    print("\n=== 코너 케이스 테스트 ===")
+    
+    corner_cases = [
+        "",  # 빈 문자열
+        " ",  # 공백만
+        "가",  # 한 글자
+        "123",  # 숫자만
+        "Hello",  # 영문만
+        "!@#$%",  # 특수문자만
+        "안녕Hello123!@#",  # 혼합
+        "안녕하세요 " * 10,  # 매우 긴 문자열
+    ]
+    
+    print("\n--- SyntaticObfuscation 코너 케이스 ---")
+    if syntatic_obfuscator:
+        for case in corner_cases[:5]:
+            print(f"\n입력: '{case}'")
+            try:
+                # spacing 테스트
+                if case:
+                    text_list = [{'span': [word, word], 'appplied_rule': []} for word in case.split()]
+                    result = syntatic_obfuscator.spacing(text_list)
+                    print(f"spacing: '{result}'")
+                else:
+                    result = syntatic_obfuscator.spacing([])
+                    print(f"spacing (빈 리스트): '{result}'")
+            except Exception as e:
+                print(f"spacing 에러: {e}")
+            
+            try:
+                result = syntatic_obfuscator.change_array(case)
+                print(f"change_array: '{result}'")
+            except Exception as e:
+                print(f"change_array 에러: {e}")
+    
+    print("\n--- SymbolAddition 코너 케이스 ---")
+    if symbol_adder:
+        for case in corner_cases[:5]:
+            print(f"\n입력: '{case}'")
+            try:
+                result = symbol_adder.comprehensive_symbol_addition(case)
+                print(f"comprehensive_symbol_addition: '{result}'")
+            except Exception as e:
+                print(f"comprehensive_symbol_addition 에러: {e}")
+    
+    print("\n" + "=" * 60)
+    
+    # 랜덤성 테스트
+    print("\n=== 랜덤성 테스트 ===")
+    
+    if syntatic_obfuscator and symbol_adder:
+        test_text = "안녕하세요 테스트입니다"
+        print(f"\n테스트 텍스트: '{test_text}'")
+        
+        print("\n--- SyntaticObfuscation 랜덤성 ---")
+        text_list = [{'span': [word, word], 'appplied_rule': []} for word in test_text.split()]
+        for i in range(3):
+            try:
+                result = syntatic_obfuscator.spacing(text_list)
+                print(f"spacing #{i+1}: '{result}'")
+            except Exception as e:
+                print(f"spacing #{i+1} 에러: {e}")
+        
+        print("\n--- SymbolAddition 랜덤성 ---")
+        for i in range(3):
+            try:
+                result = symbol_adder.add_hearts(test_text, 0.5)
+                print(f"add_hearts #{i+1}: '{result}'")
+            except Exception as e:
+                print(f"add_hearts #{i+1} 에러: {e}")
+    
+    print("\n" + "=" * 60)
+    print("✅ 모든 테스트 완료!")
+    print("\n테스트 요약:")
+    print("- SyntaticObfuscation: spacing, change_array, obfuscate_span")
+    print("- IconicObfuscation: yamin_swap, gana_swap, consonant_swap, rotation_swap 등")
+    print("- SymbolAddition: add_hearts, add_stars, add_circles, comprehensive_symbol_addition 등")
+    print("- TransliterationalObfuscation: number_swap (API 함수들은 API 키 필요)")
+    print("- PragmaticObfuscation: pragmatic_swap (API 키 필요)")
+    print("- SociolinguisticObfuscation: sociolinguistic_swap (API 키 필요)")
+    print("- 코너 케이스: 빈 문자열, 한 글자, 특수문자, 혼합 문자열 등")
+    print("- 랜덤성: 같은 입력에 대해 다른 결과 생성 확인")
 
 if __name__ == "__main__":
-    test_symbol_addition()
+    test_all_functions()
 

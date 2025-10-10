@@ -31,6 +31,9 @@ data/*
 *.xlsx
 .DS_Store
 labeled_data/*
+G2P
+classification/eval_results/
+classification/save/
 
 # PyInstaller
 #   Usually these files are written by a python script from a template
