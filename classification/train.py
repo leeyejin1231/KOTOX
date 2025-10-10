@@ -103,13 +103,13 @@ def train(log):
     df["param"]["SEED"] = log.param.SEED
     
     current_step = 0
-    eval_interval = 25  # 25 step마다 평가
+    eval_interval = 25  # evaluate every 25 steps
     
     for epoch in range(num_epochs):
         print(f"epoch {epoch+1}")
         train_loss, current_step = train_step(train_loader, model, optimizer, criterion, current_step)
         
-        # 10 step마다 평가 및 저장
+        # evaluate and save every 25 steps
         if current_step % eval_interval == 0:
             acc, f1 = evaluate(valid_loader, model)
             print(f"Step {current_step}, Loss: {train_loss:.4f}, Accuracy: {acc:.4f}, F1-Score: {f1:.4f}")
@@ -126,7 +126,7 @@ def train(log):
                 df["valid_loss"] = train_loss
                 print(f"=== Model saved at step {current_step} with F1-score: {f1:.4f} ===")
     
-    # 마지막에 한 번 더 평가
+    # evaluate one more time at the end
     acc, f1 = evaluate(valid_loader, model)
     print(f"Final Step {current_step}, Loss: {train_loss:.4f}, Accuracy: {acc:.4f}, F1-Score: {f1:.4f}")
     

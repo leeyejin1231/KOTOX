@@ -1,47 +1,33 @@
-from operator import index
-from tkinter import X
-from tkinter.constants import FALSE
-from augment_funtions import Processing, SyntaticObfuscation, IconicObfuscation, TransliterationalObfuscation, SymbolAddition, PragmaticObfuscation, SociolinguisticObfuscation, PhoneticAddition
 import pandas as pd
 from tqdm import tqdm
 import random
-from collections import defaultdict
-from typing import List, Dict, Tuple, Any
 import argparse
+from augment_funtions import Processing, SyntaticObfuscation, IconicObfuscation, TransliterationalObfuscation, SymbolAddition, PhoneticAddition
 
 
 class Augmentation:
     def __init__(self, rng):
-        pragmatic_obfuscation = PragmaticObfuscation()
         processing = Processing()
         syntatic_obfuscation= SyntaticObfuscation()
         iconic_obfuscation = IconicObfuscation()
         symbol_addition = SymbolAddition()
         transliterational_obfuscation = TransliterationalObfuscation()
-        sociolinguistic_obfuscation = SociolinguisticObfuscation()
         phonetic_addition = PhoneticAddition()
         self.rng = rng
 
         self.MAP = {
             "1-1": processing.first_power_replace,         # 초성대치
-            # "1-2": processing.reverse_first_power_replace,     #역초성대치
             "1-3":processing.vowel_replace,   #모음 대치
             "1-4": processing.last_replace,   #받침 대치
             "1-5": processing.sound_like_replace,   #음운 변동을 반영해서 표기    
             "2-1": phonetic_addition.phonological_addition_semivowel,   #반모음 첨가
             "2-2": phonetic_addition.phonological_addition_adaptive_final_consonant,  #받침 추가 (뒤초성에따라)
             "2-3": phonetic_addition.phonological_addition_initial_consonant,    #초성 추가
-            # "2-4": phonetic_addition.phonological_addition_final_consonant,    #받침 추가 (랜덤))
             "3-1": processing.continue_sound,   #연음
-            # "3-2": processing.reverse_continue_sound,  #역연음
-            "5-1": iconic_obfuscation.yamin_swap, #도상적 대치 (야민)
-            # "5-2": iconic_obfuscation.gana_swap, #도상적 대치 (가나다)
+            "5-1": iconic_obfuscation.yamin_swap, #도상적 대치 (가나다)
             "5-2": iconic_obfuscation.consonant_swap, #도상적 대치(ㄱㄴㄷ,ㅏㅑㅓ)
             "6-1": iconic_obfuscation.rotation_swap, #방향 전환 (90도)
-            # "6-2": iconic_obfuscation.rotation_180_swap, #방향 전환 (180도)
-            # "7": iconic_obfuscation.compression_swap, #압착
             "8-1": transliterational_obfuscation.iconic_swap,  # 음차
-            # "8-2": transliterational_obfuscation.iconic_swap,
             "8-3": transliterational_obfuscation.foreign_iconic_swap,
             "8-2": transliterational_obfuscation.meaning_swap,  #표기대치 (한자)
             "10": syntatic_obfuscation.spacing,  # 띄어쓰기
@@ -62,10 +48,10 @@ class Augmentation:
         self.LOW = {"1-3", "2-3", "3-1", "5-1", "6-1", "8-2", "11"}
 
     # -----------------------
-    # 유틸리티
+    # Utility
     # -----------------------
     def _tokenize(self, text: str) -> List[str]:
-        # 간단 토크나이즈(공백 기준). 필요 시 더 정교한 토크나이저로 교체 가능.
+        # Simple tokenization (based on whitespace). Can be replaced with more sophisticated tokenizer if needed.
         return text.split()
 
     def _detokenize(self, text_list):
@@ -89,13 +75,10 @@ class Augmentation:
         if rule in self.LOW:
             apply_ratio = 0.25
         span_candicate = [i for i, span in enumerate(span_list) if span != None]
-        # print(f"span_list: {span_list}")
-        # print(f"span_candicate: {span_candicate}")
         selected_index_length =  max(int(len(span_list) * apply_ratio),1)
         if len(span_candicate) < selected_index_length:
             return None
         selected_index = self.rng.sample(span_candicate, selected_index_length)
-        # print(f"selected_index: {selected_index}")
 
         return selected_index
 
@@ -145,21 +128,21 @@ class Augmentation:
         
         while max_count > current_count:
             current_loop += 1
+            # Maximum loop
             if current_loop > 500:
                 return {"origin":text[0],"toxic":text[1],"obfuscated_rules":[], "neutral_steps":[], "toxic_steps":[]}
 
             neutral_after_list = []
             toxic_after_list = []
 
-            # 기법 선택
+            # Select technique
             selected_rule = self.rng.choice(list(all_rules.keys()))
-            # print(len(all_rules))
 
             if selected_rule in self.SENTENCE:
                 if current_count != max_count - 1:
                     continue
                 elif current_count == max_count - 1:
-                    #띄어쓰기
+                    # Space addition
                     if selected_rule == '10':
                         neutral_after_text = self.MAP[selected_rule](neutral_text_list)
                         toxic_after_text = self.MAP[selected_rule](toxic_text_list)
@@ -167,7 +150,6 @@ class Augmentation:
                         report['neutral_steps'].append({'rule': "10", "obfuscated_text": neutral_after_text})
                         report['toxic_steps'].append({'rule': "10", "obfuscated_text": toxic_after_text})
                         break
-                    #기호 추가
                     else:
                         neutral_text = self._detokenize(neutral_text_list)
                         toxic_text = self._detokenize(toxic_text_list)
@@ -192,31 +174,19 @@ class Augmentation:
                 constrain = 0
                 continue
             else:
-                # 기법 적용
+                # Apply technique
                 for span in neutral_text_list:
                     neutral_after = self._apply_rule_to_span(span, selected_rule)
                     neutral_after_list.append(neutral_after)
                 for span in toxic_text_list:
                     toxic_after = self._apply_rule_to_span(span, selected_rule)
                     toxic_after_list.append(toxic_after)
-                    # print(f"toxic_after: {toxic_after}")
-                # print("================")
-                # print(f"neutral_text: {report['origin']}")
-                # print(f"neutral_after: {neutral_after}")
-                # print(f"selected_rule: {selected_rule}")
-                # print(f"toxic_after: {report['toxic']}")
-                # print(f"toxic_after: {toxic_after}")
-                # 스팬 선택
+                # Select span
                 neutral_selected_span = self._select_span(neutral_after_list, apply_ratio, selected_rule)
                 toxic_selected_span = self._select_span(toxic_after_list, apply_ratio, selected_rule)
-
-                # print("+++++++++++++++++++++++++")
-                # print(f"neutral_selected_span: {neutral_selected_span}")
-                # print(f"toxic_selected_span: {toxic_selected_span}")
-                # print("+++++++++++++++++++++++++")
                 
                 if neutral_selected_span and toxic_selected_span:
-                    # 스팬 적용
+                    # Apply span
                     for i in neutral_selected_span:
                         neutral_text_list[i]['applied_rule'].append(selected_rule)
                         neutral_text_list[i]['span'].append(neutral_after_list[i])
@@ -226,12 +196,6 @@ class Augmentation:
 
                     neutral_text = self._detokenize(neutral_text_list)
                     toxic_text = self._detokenize(toxic_text_list)
-
-                    
-                    # print(f"origin text: {report['origin']}")
-                    # print(f"neutral_text: {neutral_text}")
-                    # print(f"toxic text: {report['toxic']}")
-                    # print(f"toxic_text: {toxic_text}")
                         
                     report['obfuscated_rules'].append(selected_rule)
                     report['neutral_steps'].append({'rule': selected_rule, "obfuscated_text": neutral_text})
@@ -240,10 +204,9 @@ class Augmentation:
                     current_count += 1
                     constrain = 0
                 else:
-                    # 다시 시도
+                    # Try again
                     all_rules.pop(selected_rule)
                     constrain += 1
-                    # print(f"constrain: {constrain}")
                     if constrain > 15:
                         constrain = 0
                         current_count = 0
@@ -253,8 +216,7 @@ class Augmentation:
                         toxic_text_list = self._tokenize(text[1])
                         neutral_text_list = [{'span': [x], 'applied_rule': []} for x in neutral_text_list]
                         toxic_text_list = [{'span': [x], 'applied_rule': []} for x in toxic_text_list]
-                        # all_rules = self.MAP.copy()
-                        print("=====re start!!======")
+                        print("===== Re-start!!======")
                     continue
 
         return report

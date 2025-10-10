@@ -1,5 +1,4 @@
-# dataset = ["KObfus/no_obfus", "KObfus/total", "KObfus/no+obfus"]
-dataset = ["KObfus/no+obfus"]
+dataset = ["KObfus/no_obfus", "KObfus/total", "KObfus/no+obfus"]
 
 tuning_param  = ["learning_rate","train_batch_size","eval_batch_size","nepoch","SEED","dataset"] ## list of possible paramters to be tuned
 
