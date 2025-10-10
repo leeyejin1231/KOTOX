@@ -12,19 +12,49 @@ class SyntaticObfuscation:
     def __init__(self):\
         pass
     
-    def spacing(self, text: str) -> str:
+    def spacing(self, text_list: str) -> str:
         """
         4-A. 띄어쓰기
         """
-        text = text.strip()
-        out = []
-        for i, ch in enumerate(text):
-            out.append(ch)
-            if 0xAC00 <= ord(ch) <= 0xD7A3:
-                if i < len(text) - 1 and random.random() < 0.25:
-                    out.append(" ")
-        
-        return "".join(out)
+        option = random.choice([0, 1])
+        if option == 0:
+            result = ""
+            for span in text_list:
+                result += span['span'][-1]
+            return result
+        else:
+            result_list = []
+            applied_index = []
+            for i in range(len(text_list)):
+                word = text_list[i]['span'][-1]
+                applied_rule = text_list[i]['applied_rule']
+                # 단어 길이가 2 이상일 때만 띄어쓰기 삽입 시도, 배열 교란이 없는 경우에만
+                if len(word) > 1 and '11' not in applied_rule:
+                    # 삽입 위치를 1 ~ len(word)-1 중에서 랜덤 선택
+                    insert_pos = random.randint(1, len(word)-1)
+                    word = word[:insert_pos] + " " + word[insert_pos:]
+                    result_list.append(word)
+                    applied_index.append(i)
+                else:
+                    result_list.append("")
+            
+            # 40% 이하면 그냥 띄어쓰기 없는 걸로
+            if len(applied_index) < int(len(text_list)*0.4):
+                result = ""
+                for span in text_list:
+                    result += span['span'][-1]
+                return result
+            else:
+                selected_span = random.sample(applied_index, int(len(text_list)*0.4))
+                result = ""
+                for i in range(len(result_list)):
+                    if i in selected_span:
+                        result += result_list[i] + " "
+                    else:
+                        result += text_list[i]['span'][-1] + " "
+                
+                return result.rstrip()
+                
 
     def change_array(self, text: str) -> str:
         """
@@ -64,23 +94,13 @@ class IconicObfuscation:
 
     def yamin_swap(self, text: str) -> str:
         """
-        2-A. 야민
+        2-A. 가나다
         """
         for key in self.iconic_dict['yamin_dict'].keys():
             if key in text:
                 text = text.replace(key, random.choice(self.iconic_dict["yamin_dict"][key]))
 
         return text
-
-    def gana_swap(self, text: str) -> str:
-        """
-        2-A. 가나
-        """
-        text_list = list(text)
-        for i in range(len(text_list)):
-            if text_list[i] in self.iconic_dict["gana_dict"].keys():
-                text_list[i] = random.choice(self.iconic_dict["gana_dict"][text_list[i]])
-        return "".join(text_list)
 
     def consonant_swap(self, text: str) -> str:
         """
@@ -106,33 +126,15 @@ class IconicObfuscation:
 
         return "".join(result)
 
-    def rotation_90_swap(self, text: str) -> str:
+    def rotation_swap(self, text: str) -> str:
         """
         2-B. 90도 회전
         """
-        for key in self.iconic_dict["rotation_90_dict"].keys():
+        for key in self.iconic_dict["rotation_dict"].keys():
             if key in text:
-                text = text.replace(key, random.choice(self.iconic_dict["rotation_90_dict"][key]))
+                text = text.replace(key, random.choice(self.iconic_dict["rotation_dict"][key]))
         return text
-
-    def rotation_180_swap(self, text: str) -> str:
-        """
-        2-B. 180도 회전
-        """
-        for key in self.iconic_dict["rotation_180_dict"].keys():
-            if key in text:
-                text = text.replace(key, random.choice(self.iconic_dict["rotation_180_dict"][key]))
-        return text
-
-    def compression_swap(self, text: str) -> str:
-        """
-        2-C. 압축
-        """
-        for key in self.iconic_dict["compression_dict"].keys():
-            if key in text:
-                text = text.replace(key, random.choice(self.iconic_dict["compression_dict"][key]))
-        return text
-
+        
 
 ### 3. 표기법적 접근
 class TransliterationalObfuscation:
@@ -145,12 +147,12 @@ class TransliterationalObfuscation:
         """
         3-A. 음차
         """
-        with open("./rules/음차_prompt.txt", "r") as file:
+        with open("./rules/latin_prompt.txt", "r") as file:
             prompt = file.read()
         
         messages = [
             {"role": "system", "content": prompt}, 
-            {"role": "user", "content": "\n\n[문장]\n" + text}
+            {"role": "user", "content": text}
             ]
         
         response = self.client.chat.completions.create(
@@ -158,82 +160,50 @@ class TransliterationalObfuscation:
             messages=messages,
         )
         
-        return response.choices[0].message.content
+        try:
+            response = response.choices[0].message.content
+            response.replace("```json", "").replace("```", "")
+            response = json.loads(response)
+        except Exception as e:
+            print(f"error: {e}")
+            return text
+        
+        return response["output"]
 
     def foreign_iconic_swap(self, text: str) -> str:
         """
         3-A. 외국어 음차
         """
-        with open("./rules/외국어_음차_prompt.txt", "r") as file:
+        with open("./rules/korean_prompt.txt", "r") as file:
             prompt = file.read()
         
         messages = [
             {"role": "system", "content": prompt}, 
-            {"role": "user", "content": "\n\n[문장]\n" + text}
+            {"role": "user", "content": text}
             ]
         response = self.client.chat.completions.create(
             model="gpt-4.1",
             messages=messages,
         )
-        
-        return response.choices[0].message.content
 
-    def chinese_iconic_swap(self, text: str) -> str:
-        """
-        3-A. 음차
-        """
-        # text_list = list(text)
-        # for i in range(len(text_list)):
-        #     if text_list[i] in self.transliterational_dict["chinese_iconic_dict"].keys():
-        #         text_list[i] = random.choice(self.transliterational_dict["chinese_iconic_dict"][text_list[i]])
-        # return "".join(text_list)
-
-        with open("./rules/한자_음차_prompt.txt", "r") as file:
-            prompt = file.read()
+        try:
+            response = response.choices[0].message.content
+            response.replace("```json", "").replace("```", "")
+            response = json.loads(response)
+        except Exception as e:
+            print(f"error: {e}")
+            return text
         
-        messages = [
-            {"role": "system", "content": prompt}, 
-            {"role": "user", "content": "\n\n[문장]\n" + text}
-            ]
-        response = self.client.chat.completions.create(
-            model="gpt-4.1",
-            messages=messages,
-        )
-        
-        return response.choices[0].message.content
+        return response["output"]
 
-    def number_swap(self, text: str) -> str:
+    def meaning_swap(self, text: str) -> str:
         """
         3-B. 표기 대치
         """     
-        for key in self.transliterational_dict["number_dict"].keys():
+        for key in self.transliterational_dict["meaning_dict"].keys():
             if key in text:
-                text = text.replace(key, random.choice(self.transliterational_dict["number_dict"][key]))
+                text = text.replace(key, random.choice(self.transliterational_dict["meaning_dict"][key]))
         return text
-
-    def meaning_dict(self, text: str) -> str:
-        """
-        3-B. 표기 대치
-        """ 
-        # text_list = list(text)
-        # for i in range(len(text_list)):
-        #     if text_list[i] in self.transliterational_dict["meaning_dict"].keys():
-        #         text_list[i] = random.choice(self.transliterational_dict["meaning_dict"][text_list[i]])
-        # return "".join(text_list)
-
-        with open("./rules/표기대치_prompt.txt", "r") as file:
-            prompt = file.read()
-        
-        messages = [
-            {"role": "system", "content": prompt}, 
-            {"role": "user", "content": "\n\n[문장]\n" + text}
-            ]
-        response = self.client.chat.completions.create(
-            model="gpt-4.1",
-            messages=messages,
-        )
-        
-        return response.choices[0].message.content
 
 
 # 6. 화용접 접근
@@ -447,103 +417,7 @@ class SymbolAddition:
         result = ' '.join(result.split())
         
         return result
-
-
-# 6. 화용적 접근
-class PragmaticObfuscation:
-    def __init__(self):
-        self.client = openai.OpenAI(api_key=API_KEY)
-            
-    def pragmatic_swap(self, text: str) -> str:
-        """
-        6-A. 표현 추가
-        """
-        with open("./rules/화용론_prompt.txt", "r") as file:
-            prompt = file.read()
-            
-        messages = [
-            {"role": "system", "content": prompt}, 
-            {"role": "user", "content": "\n\n[주어진 문장]\n" + text}
-            ]
-            
-            
-        response = self.client.chat.completions.create(
-            model="gpt-4.1",
-            messages=messages,
-        )
-        
-        return response.choices[0].message.content
-
-
-## 5. 사회언어학적 접근
-class SociolinguisticObfuscation:
-    def __init__(self):
-        self.client = openai.OpenAI(api_key=API_KEY)
-        
-    def sociolinguistic_swap(self, text: str) -> str:
-        """
-        5-A. 방언
-        """
-        with open("./rules/방언_prompt.txt", "r") as file:
-            prompt = file.read()
-            
-        messages = [
-            {"role": "system", "content": prompt}, 
-            {"role": "user", "content": "\n\n[주어진 문장]\n" + text}
-            ]
-            
-        response = self.client.chat.completions.create(
-            model="gpt-4.1",
-            messages=messages,
-        )
-        
-        return response.choices[0].message.content
-
-
-# 테스트 함수
-def test_symbol_addition():
-    """
-    기호 추가 함수들을 테스트하는 함수
-    """
-    symbol_adder = SymbolAddition()
-    obfuscator = SyntaticObfuscation()
-    iconic_obfuscator = IconicObfuscation()
-    transliterational_obfuscator = TransliterationalObfuscation()
-    pragmatic_obfuscator = PragmaticObfuscation()
-    sociolinguistic_obfuscator = SociolinguisticObfuscation()
-
-    test_text = "방이 너무 더러워요"
-    # test_text = "아니 방이 너무 좁고 더러워요 진짜 짜증나게"
-    # test_text = "사랑해요 나를 사랑해줘"
-
-    # print("\n=== 종합 기호 추가 ===")
-    # print("종합 결과:", symbol_adder.comprehensive_symbol_addition(test_text))
-
-    # print("\n=== 배열 변경 ===")
-    # print("띄어쓰기 추가 결과:", obfuscator.spacing(test_text))
-    # print("배열 변경 결과:", obfuscator.change_array(test_text))
-
-    # print("\n=== 도상적 대치 ===")
-    # print("야민 결과:", iconic_obfuscator.yamin_swap(test_text))
-    # print("가나 결과:", iconic_obfuscator.gana_swap(test_text))
-    print("자음, 모음 결과:", iconic_obfuscator.consonant_swap("조까라시바라마개새끼야"))
-    # print("90도 회전 결과:", iconic_obfuscator.rotation_90_swap(test_text))
-    # print("180도 회전 결과:", iconic_obfuscator.rotation_180_swap(test_text))
-    # print("압축 결과:", iconic_obfuscator.compression_swap(test_text))
-
-    # print("\n=== 표기법적 접근 ===")
-    # print("음차 결과:", transliterational_obfuscator.iconic_swap(test_text))
-    # print("한자음차 결과:", transliterational_obfuscator.chinese_iconic_swap(test_text))
-    # print("외국어 음차 결과:", transliterational_obfuscator.foreign_iconic_swap(test_text))
-    # print("숫자표기 대치 결과:", transliterational_obfuscator.number_swap(test_text))
-    # print("표기 대치 결과:", transliterational_obfuscator.meaning_dict(test_text))
-
-    # print("\n=== 화용적 접근 ===")
-    # print("화용적 접근 결과:", pragmatic_obfuscator.pragmatic_swap(test_text))
-
-    # print("\n=== 사회언어학적 접근 ===")
-    # print("방언 결과:", sociolinguistic_obfuscator.sociolinguistic_swap(test_text))
-
+    
 if __name__ == "__main__":
-    test_symbol_addition()
+    print("=== 한국어 증강 모듈 ===")
 

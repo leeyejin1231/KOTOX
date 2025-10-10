@@ -26,12 +26,17 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-data/*
+data/KOTOX_classification/no_obfus/*
+data/KOTOX_classification/no+obfus/*
+data/ko_obf_length.csv
+data/ko_obfs_augmented_*.csv
 *.ipynb
-processing.py
 *.xlsx
 .DS_Store
 labeled_data/*
+G2P
+classification/eval_results/
+classification/save/
 
 # PyInstaller
 #   Usually these files are written by a python script from a template
