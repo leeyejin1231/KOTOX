@@ -23,7 +23,7 @@
 
 ### Obfuscation Rules
 
-|  | Transformation rule |  example  |  
+| Approach | Transformation rule |  Example  |  
 |--|---|---|  
 | **Phonological** | Initial consonant repacement | 한국인 → 한꾹인 |
 |  | Medial vowel replacement| 해수욕장 → 헤수욕장 |
