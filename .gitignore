@@ -28,13 +28,12 @@ MANIFEST
 
 data/*
 *.ipynb
-processing.py
 *.xlsx
 .DS_Store
 labeled_data/*
-augmentation2.py
-augmentation3.py
-augmentation4.py
+G2P
+classification/eval_results/
+classification/save/
 
 # PyInstaller
 #   Usually these files are written by a python script from a template

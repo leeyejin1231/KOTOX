@@ -1,12 +1,16 @@
 import torch.nn as nn
-from transformers import AutoModel
+from transformers import AutoModel, XLMRobertaModel
 
 
 class CustomBERT(nn.Module):
     def __init__(self, bert_model_name, hidden_dim, e=1e-3):
         super(CustomBERT, self).__init__()
 
-        self.bert = AutoModel.from_pretrained(bert_model_name)
+        try:
+            self.bert = AutoModel.from_pretrained(bert_model_name)
+        except:
+            print(f"AutoModel failed, trying XLMRobertaModel for {bert_model_name}")
+            self.bert = XLMRobertaModel.from_pretrained(bert_model_name)
         self.hidden_dim = hidden_dim
 
         # Classifier
