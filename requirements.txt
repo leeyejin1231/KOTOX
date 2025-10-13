@@ -12,3 +12,8 @@ easydict==1.13
 jamo==0.4.1
 konlpy==0.6.0
 -c conda-forge openjdk=21
+bitsandbytes==0.48.0
+google-api-python-client==2.184.0
+kernels==0.10.2
+peft==0.17.1
+seaborn==0.13.2

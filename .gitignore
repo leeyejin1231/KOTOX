@@ -37,6 +37,9 @@ labeled_data/*
 G2P
 classification/eval_results/
 classification/save/
+result
+finetuned_models
+log
 
 # PyInstaller
 #   Usually these files are written by a python script from a template
