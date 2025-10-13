@@ -33,7 +33,7 @@
 |  | Medial vowel insertion | 한국인 → 환궉윈 |
 |  | Final consonant insertion | 바깥 → 박깥 |
 |  | Liaison | 할 짓이가 → 할찌시가 |
-| **Iconological** | Hanguel look-alike | 귀엽다 → 커엽다 |
+| **Iconological** | Hangeul look-alike | 귀엽다 → 커엽다 |
 |  | Cross-script substitution | 쭈꾸미 → 卒꾸口I |
 |  | Rotation-based variation | 논문 → 곰국 |
 | **Transliteration** | Phonetic substitution (Latin) | 망했어 → mang했어 |
