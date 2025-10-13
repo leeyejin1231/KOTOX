@@ -39,7 +39,7 @@
 | **Transliteration** | Phonetic substitution (Latin) | 망했어 → mang했어 |
 |  | Phonetic substitution (CJK) | 수상해 → 水상해 |
 |  | Semantic substitution | 가지마세요 → 돈트고쿠다사이 |
-| **Synatatic** | Spacing perturbation | 화장실 더럽고 별로 → 화장 실더럽 고별로 |
+| **Syntatic** | Spacing perturbation | 화장실 더럽고 별로 → 화장 실더럽 고별로 |
 |  | Syllable anagram | 오랜만에 외국여행을 → 오만랜에 외여국행을 |
 |  | Symbol/emoji insertion | 돈을 쓰는 호갱 → 돈을°♡ 쓰는《호..갱》≥ㅅ≤ |
 
